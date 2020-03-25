@@ -18,8 +18,8 @@
 def extract_7z(archive, compression, cmd, verbosity, interactive, outdir):
     """Extract a 7z archive."""
     cmdlist = [cmd, 'x']
-    if not interactive:
-        cmdlist.extend(['-p-', '-y'])
+    # if not interactive:
+        # cmdlist.extend(['-p-', '-y'])
     cmdlist.extend(['-o%s' % outdir, '--', archive])
     return cmdlist
 

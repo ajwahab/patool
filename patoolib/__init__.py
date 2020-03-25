@@ -481,12 +481,14 @@ def _extract_archive(archive, verbosity=0, interactive=True, outdir=None,
     else:
         do_cleanup_outdir = False
     try:
-        cmdlist = get_archive_cmdlist(archive, compression, program, verbosity, interactive, outdir)
+        cmdlist = get_archive_cmdlist(archive, compression, program, verbosity,
+                                      interactive, outdir)
         if cmdlist:
             # an empty command list means the get_archive_cmdlist() function
             # already handled the command (eg. when it's a builtin Python
             # function)
-            run_archive_cmdlist(cmdlist, verbosity=verbosity, interactive=interactive)
+            run_archive_cmdlist(cmdlist, verbosity=verbosity,
+                                interactive=interactive)
         if do_cleanup_outdir:
             target, msg = cleanup_outdir(outdir, archive)
         else:
@@ -518,12 +520,14 @@ def _create_archive(archive, filenames, verbosity=0, interactive=True,
         # the arc program mangles the archive name if it contains ".arc"
         origarchive = archive
         archive = util.tmpfile(dir=os.path.dirname(archive), suffix=".arc")
-    cmdlist = get_archive_cmdlist(archive, compression, program, verbosity, interactive, filenames)
+    cmdlist = get_archive_cmdlist(archive, compression, program, verbosity,
+                                  interactive, filenames)
     if cmdlist:
         # an empty command list means the get_archive_cmdlist() function
         # already handled the command (eg. when it's a builtin Python
         # function)
-        run_archive_cmdlist(cmdlist, verbosity=verbosity)
+        run_archive_cmdlist(cmdlist, verbosity=verbosity,
+                            interactive=interactive)
     if origarchive:
         shutil.move(archive, origarchive)
 
@@ -546,7 +550,8 @@ def _handle_archive(archive, command, verbosity=0, interactive=True,
         # an empty command list means the get_archive_cmdlist() function
         # already handled the command (eg. when it's a builtin Python
         # function)
-        run_archive_cmdlist(cmdlist, verbosity=verbosity)
+        run_archive_cmdlist(cmdlist, verbosity=verbosity,
+                            interactive=interactive)
 
 
 def get_archive_cmdlist_func(program, command, format):
@@ -591,7 +596,8 @@ def _diff_archives(archive1, archive2, verbosity=0, interactive=True):
         try:
             path2 = _extract_archive(archive2, outdir=tmpdir2, verbosity=-1,
                                      interactive=interactive)
-            return util.run_checked([diff, "-urN", path1, path2], verbosity=1, ret_ok=(0, 1))
+            return util.run_checked([diff, "-urN", path1, path2], verbosity=1,
+                                    interactive=interactive, ret_ok=(0, 1))
         finally:
             shutil.rmtree(tmpdir2, onerror=rmtree_log_error)
     finally:

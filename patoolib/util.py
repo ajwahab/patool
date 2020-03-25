@@ -208,21 +208,27 @@ def run(cmd, verbosity=0, interactive=True, **kwargs):
         log_info("running %s" % " ".join(map(shell_quote_nt, cmd)))
     if kwargs:
         if verbosity >= 0:
-            log_info("\twith %s" % ", ".join("%s=%s" % (k, shell_quote(str(v)))\
+            log_info("\twith %s" % ", ".join("%s=%s" % (k, shell_quote(str(v))) \
                                              for k, v in kwargs.items()))
         if kwargs.get("shell"):
             # for shell calls the command must be a string
             cmd = " ".join(cmd)
     if not interactive:
         kwargs['timeout'] = time_out
-    if verbosity < 1:
-        # hide command output on stdout
-        with open(os.devnull, 'wb') as devnull:
-            kwargs['stdout'] = devnull
-            res = subprocess.call(cmd, **kwargs)
-    else:
-        res = subprocess.call(cmd, **kwargs)
-    return res
+    try:
+        if verbosity < 1:
+            with open(os.devnull, 'wb') as devnull:
+                kwargs['stdout'] = devnull
+                res = subprocess.run(cmd, **kwargs)
+        else:
+            res = subprocess.run(cmd, **kwargs)
+        ret = res.returncode
+    except subprocess.TimeoutExpired as e:
+        print(e)
+        ret = int(e.stderr)
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+    return ret
 
 
 def run_checked(cmd, ret_ok=(0,), **kwargs):
@@ -531,15 +537,13 @@ def log_info(msg, out=sys.stdout):
 def log_internal_error(out=sys.stderr, etype=None, evalue=None, tb=None):
     """Print internal error message (output defaults to stderr)."""
     print(os.linesep, file=out)
-    print("""********** Oops, I did it again. *************
-
-You have found an internal error in %(app)s. Please write a bug report
-at %(url)s and include at least the information below:
-
-Not disclosing some of the information below due to privacy reasons is ok.
-I will try to help you nonetheless, but you have to give me something
-I can work with ;) .
-""" % dict(app=configuration.AppName, url=configuration.SupportUrl), file=out)
+    print(f"{'*'*8} Oops, I did it again. {'*'*8}\n" +
+          f"You have found an internal error in {configuration.AppName}.\n" +
+          f"Please write a bug report at {configuration.SupportUrl}" +
+          f" and include at least the information below:\n" +
+          f"(Not disclosing some of the information below due to privacy reasons is ok." +
+          f"I will try to help you nonetheless, but you have to give me something I can work with ;)",
+          file=out)
     if etype is None:
         etype = sys.exc_info()[0]
     if evalue is None:
@@ -553,6 +557,7 @@ I can work with ;) .
     print(os.linesep,
           f"{'*'*8} {configuration.AppName} internal error, over and out {'*'*8}",
           file=out)
+
 
 def print_env_info(key, out=sys.stderr):
     """If given environment key is defined, print it out."""
@@ -602,7 +607,9 @@ def p7zip_supports_rar():
     # the subdirectory and codec name
     codecname = 'p7zip/Codecs/Rar29.so'
     # search canonical user library dirs
-    for libdir in ('/usr/lib', '/usr/local/lib', '/usr/lib64', '/usr/local/lib64', '/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'):
+    for libdir in ('/usr/lib', '/usr/local/lib', '/usr/lib64',
+                   '/usr/local/lib64', '/usr/lib/i386-linux-gnu',
+                   '/usr/lib/x86_64-linux-gnu'):
         fname = os.path.join(libdir, codecname)
         if os.path.exists(fname):
             return True
